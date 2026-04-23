@@ -1,0 +1,42 @@
+global:
+  imagePullPolicy: IfNotPresent
+
+services:
+  user:
+    image: smartcrop-platform_user-service
+    port: 8001
+    replicas: 1
+
+  crop:
+    image: smartcrop-platform_crop-advisory-service
+    port: 8002
+    replicas: 1
+
+  marketplace:
+    image: smartcrop-platform_marketplace-service
+    port: 8003
+    replicas: 1
+
+  frontend:
+    image: smartcrop-platform_frontend
+    port: 80
+    replicas: 1
+
+  postgres:
+    image: postgres:15-alpine
+    storage: 1Gi
+
+  redis:
+    image: redis:7-alpine
+
+env:
+  JWT_SECRET: your_super_secret_jwt_key_change_in_production
+  OPENWEATHER_API_KEY: your_openweather_api_key
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "100m"
+    memory: "128Mi"

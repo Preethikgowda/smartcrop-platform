@@ -1,0 +1,25 @@
+-- init.sql — Runs on first PostgreSQL container startup
+-- Creates all required databases and grants privileges
+
+CREATE DATABASE userdb;
+CREATE DATABASE cropdb;
+CREATE DATABASE marketdb;
+
+GRANT ALL PRIVILEGES ON DATABASE userdb TO agrismart;
+GRANT ALL PRIVILEGES ON DATABASE cropdb TO agrismart;
+GRANT ALL PRIVILEGES ON DATABASE marketdb TO agrismart;
+
+\c userdb
+GRANT ALL ON SCHEMA public TO agrismart;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO agrismart;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO agrismart;
+
+\c cropdb
+GRANT ALL ON SCHEMA public TO agrismart;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO agrismart;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO agrismart;
+
+\c marketdb
+GRANT ALL ON SCHEMA public TO agrismart;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO agrismart;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO agrismart;

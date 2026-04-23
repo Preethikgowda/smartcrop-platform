@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "marketplace-service.fullname" . }}
+  labels:
+    {{- include "marketplace-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.global.services.marketplace.replicas }}
+  selector:
+    matchLabels:
+      {{- include "marketplace-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "marketplace-service.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.global.services.marketplace.image }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.global.services.marketplace.port }}
+              protocol: TCP
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:postgres_password@postgres:5432/marketdb"
+            - name: DATABASE_URL_SYNC
+              value: "postgresql://postgres:postgres_password@postgres:5432/marketdb"
+            - name: JWT_SECRET
+              value: {{ .Values.global.env.JWT_SECRET }}
+            - name: JWT_ALGORITHM
+              value: "HS256"
+            - name: PORT
+              value: "{{ .Values.global.services.marketplace.port }}"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.global.resources | nindent 12 }}
