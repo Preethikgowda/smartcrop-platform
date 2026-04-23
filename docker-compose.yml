@@ -1,0 +1,113 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: agrismart
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - agrismart-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - agrismart-network
+
+  user-service:
+    build:
+      context: ./services/user-service
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${USER_DB}"
+      DATABASE_URL_SYNC: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${USER_DB}"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES}
+      PORT: "8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agrismart-network
+
+  crop-advisory-service:
+    build:
+      context: ./services/crop-advisory-service
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${CROP_DB}"
+      DATABASE_URL_SYNC: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${CROP_DB}"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      PORT: "8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - agrismart-network
+
+  marketplace-service:
+    build:
+      context: ./services/marketplace-service
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${MARKET_DB}"
+      DATABASE_URL_SYNC: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${MARKET_DB}"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      PORT: "8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agrismart-network
+
+  frontend:
+    build:
+      context: ./services/frontend
+      args:
+        VITE_USER_API: ${VITE_USER_API}
+        VITE_CROP_API: ${VITE_CROP_API}
+        VITE_MARKET_API: ${VITE_MARKET_API}
+    ports:
+      - "3000:80"
+    depends_on:
+      - user-service
+      - crop-advisory-service
+      - marketplace-service
+    networks:
+      - agrismart-network
+
+volumes:
+  postgres_data:
+
+networks:
+  agrismart-network:
+    driver: bridge

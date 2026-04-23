@@ -1,0 +1,21 @@
+version: "3.8"
+
+# Development overrides
+services:
+  user-service:
+    volumes:
+      - ./services/user-service/app:/app/app
+    environment:
+      LOG_LEVEL: debug
+
+  crop-advisory-service:
+    volumes:
+      - ./services/crop-advisory-service/app:/app/app
+    environment:
+      LOG_LEVEL: debug
+
+  marketplace-service:
+    volumes:
+      - ./services/marketplace-service/app:/app/app
+    environment:
+      LOG_LEVEL: debug
